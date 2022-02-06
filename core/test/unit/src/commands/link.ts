@@ -21,6 +21,7 @@ import {
 import { LinkSourceCommand } from "../../../../src/commands/link/source"
 import { Garden } from "../../../../src/garden"
 import { LogEntry } from "../../../../src/logger/log-entry"
+import { copy } from "fs-extra"
 
 describe("LinkCommand", () => {
   let garden: Garden
@@ -123,10 +124,12 @@ describe("LinkCommand", () => {
 
   describe("LinkSourceCommand", () => {
     const cmd = new LinkSourceCommand()
-    const localSourcePath = join(getDataDir("test-project-local-project-sources"), "source-a")
+    let localSourcePath: string
 
-    beforeEach(async () => {
+    before(async () => {
       garden = await makeExtProjectSourcesGarden()
+      localSourcePath = resolve(garden.projectRoot, "..", "test-project-local-project-sources")
+      await copy(getDataDir("test-project-local-project-sources"), localSourcePath)
       log = garden.log
     })
 

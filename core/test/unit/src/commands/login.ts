@@ -20,11 +20,13 @@ import { CloudApi } from "../../../../src/cloud/api"
 import { LogLevel } from "../../../../src/logger/logger"
 import { gardenEnv } from "../../../../src/constants"
 import { EnterpriseApiError } from "../../../../src/exceptions"
+import { ensureConnected } from "../../../../src/db/connection"
 
 // In the tests below we stub out the auth redirect server but still emit the
 // token received event.
 describe("LoginCommand", () => {
   beforeEach(async () => {
+    await ensureConnected()
     await cleanupAuthTokens()
     td.replace(AuthRedirectServer.prototype, "start", async () => {})
     td.replace(AuthRedirectServer.prototype, "close", async () => {})

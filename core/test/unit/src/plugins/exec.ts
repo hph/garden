@@ -13,7 +13,7 @@ import { gardenPlugin, configureExecModule } from "../../../../src/plugins/exec"
 import { GARDEN_BUILD_VERSION_FILENAME, DEFAULT_API_VERSION } from "../../../../src/constants"
 import { LogEntry } from "../../../../src/logger/log-entry"
 import { keyBy } from "lodash"
-import { getDataDir, makeTestModule, expectError, TestGarden } from "../../../helpers"
+import { getDataDir, makeTestModule, expectError } from "../../../helpers"
 import { TaskTask } from "../../../../src/tasks/task"
 import { readModuleVersionFile } from "../../../../src/vcs/vcs"
 import { dataDir, makeTestGarden } from "../../../helpers"
@@ -27,7 +27,6 @@ import { testFromConfig } from "../../../../src/types/test"
 import { dedent } from "../../../../src/util/string"
 
 describe("exec plugin", () => {
-  const projectRoot = resolve(dataDir, "test-project-exec")
   const moduleName = "module-a"
 
   let garden: Garden
@@ -35,14 +34,14 @@ describe("exec plugin", () => {
   let log: LogEntry
 
   beforeEach(async () => {
-    garden = await makeTestGarden(projectRoot, { plugins: [gardenPlugin()] })
+    garden = await makeTestGarden(resolve(dataDir, "test-project-exec"), { plugins: [gardenPlugin()] })
     graph = await garden.getConfigGraph({ log: garden.log, emit: false })
     log = garden.log
     await garden.clearBuilds()
   })
 
   it("should run a script on init in the project root, if configured", async () => {
-    const _garden = await TestGarden.factory(garden.projectRoot, {
+    const _garden = await makeTestGarden(garden.projectRoot, {
       plugins: [],
       config: {
         apiVersion: DEFAULT_API_VERSION,
@@ -65,7 +64,7 @@ describe("exec plugin", () => {
   })
 
   it("should throw if a script configured and exits with a non-zero code", async () => {
-    const _garden = await TestGarden.factory(garden.projectRoot, {
+    const _garden = await makeTestGarden(garden.projectRoot, {
       plugins: [],
       config: {
         apiVersion: DEFAULT_API_VERSION,
@@ -389,7 +388,7 @@ describe("exec plugin", () => {
       const module = graph.getModule("module-local")
       const actions = await garden.getActionRouter()
       const res = await actions.build({ log, module, graph })
-      expect(res.buildLog).to.eql(join(projectRoot, "module-local"))
+      expect(res.buildLog).to.eql(join(garden.projectRoot, "module-local"))
     })
 
     it("should receive module version as an env var", async () => {
@@ -431,7 +430,7 @@ describe("exec plugin", () => {
           graph
         ),
       })
-      expect(res.log).to.eql(join(projectRoot, "module-local"))
+      expect(res.log).to.eql(join(garden.projectRoot, "module-local"))
     })
 
     it("should receive module version as an env var", async () => {
@@ -479,7 +478,7 @@ describe("exec plugin", () => {
           dependencies: [],
         },
       })
-      expect(res.log).to.eql(join(projectRoot, "module-local"))
+      expect(res.log).to.eql(join(garden.projectRoot, "module-local"))
     })
 
     it("should receive module version as an env var", async () => {
@@ -525,9 +524,10 @@ describe("exec plugin", () => {
   })
 
   context("services", () => {
-    const touchFilePath = join(projectRoot, "module-local", "deployed.log")
+    let touchFilePath: string
 
     beforeEach(async () => {
+      touchFilePath = join(garden.projectRoot, "module-local", "deployed.log")
       await remove(touchFilePath)
     })
 
